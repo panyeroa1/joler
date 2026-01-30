@@ -97,13 +97,22 @@ export class MaximoApp {
             // Add bot text response
             this.addMessage(data.text, "bot");
 
-            // Play the response audio
+            // Play the response audio (AUTOPLAY)
             if (data.audio_url) {
                 const audioUrl = data.audio_url.startsWith("http") ? data.audio_url : `${this.apiBaseUrl}${data.audio_url}`;
                 const audio = new Audio(audioUrl);
-                audio.play();
+
                 this.updateStatus("Speaking...");
-                audio.onended = () => this.updateStatus("Standby");
+
+                audio.play().catch(err => {
+                    console.warn("Autoplay blocked or failed:", err);
+                    this.updateStatus("Autoplay Blocked");
+                    this.addManualPlayButton(audio);
+                });
+
+                audio.onended = () => {
+                    this.updateStatus("Standby");
+                };
             } else {
                 this.updateStatus("Standby");
             }
@@ -113,6 +122,19 @@ export class MaximoApp {
             this.addMessage("Error: Could not connect to the engine.", "bot");
             this.updateStatus("Error");
         }
+    }
+
+    addManualPlayButton(audio) {
+        const btn = document.createElement('button');
+        btn.textContent = "▶ Click to Play Response";
+        btn.className = "manual-play-btn";
+        btn.onclick = () => {
+            audio.play();
+            btn.remove();
+            this.updateStatus("Speaking...");
+        };
+        this.chatContainer.appendChild(btn);
+        this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
     }
 
     showTyping() {

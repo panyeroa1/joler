@@ -12,6 +12,8 @@ from qwen_tts.models import Qwen2AudioForConditionalGeneration
 from qwen_tts.processors import Qwen2AudioProcessor
 import soundfile as sf
 import librosa
+import requests
+import json
 
 app = FastAPI(title="Maximo Primo API")
 
@@ -78,7 +80,46 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("tts"))
         bot_text = "System default voice active."
 
     # TTS Synthesis Routing
-    if engine == "tts":
+    audio_generated = False
+
+    if engine == "cartesia":
+        try:
+            cartesia_url = "https://api.cartesia.ai/tts/bytes"
+            headers = {
+                "Cartesia-Version": "2025-04-16",
+                "X-API-Key": "sk_car_SfvQvL1pKathEnBbiTQPUm",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model_id": "sonic-3-latest",
+                "transcript": bot_text,
+                "voice": {
+                    "mode": "id",
+                    "id": "005af375-5aad-4c02-9551-7fc411430542"
+                },
+                "output_format": {
+                    "container": "wav",
+                    "encoding": "pcm_f32le",
+                    "sample_rate": 44100
+                },
+                "language": "nl",
+                "speed": "normal",
+                "pronunciation_dict_id": "pdict_nyWBBphhMbxQmpmccYdMUy",
+                "generation_config": {
+                    "speed": 1,
+                    "volume": 1,
+                    "emotion": "excited"
+                }
+            }
+            response = requests.post(cartesia_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                with open(output_path, "wb") as f:
+                    f.write(response.content)
+                audio_generated = True
+        except Exception as e:
+            print(f"Cartesia error: {e}")
+
+    if engine == "tts" and not audio_generated:
         # Attempt to use local Coqui TTS if available
         try:
             # Mocking command-line call for demonstration
@@ -87,12 +128,13 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("tts"))
         except Exception:
             pass
 
-    # For demonstration/missing engine, generate fallback audio
-    sr = 16000
-    duration = 1.0
-    t = np.linspace(0, duration, int(sr * duration))
-    y = 0.5 * np.sin(2 * np.pi * 440 * t) # Beep
-    sf.write(output_path, y, sr)
+    # For demonstration/missing engine, generate fallback audio if nothing was generated
+    if not audio_generated:
+        sr = 16000
+        duration = 1.0
+        t = np.linspace(0, duration, int(sr * duration))
+        y = 0.5 * np.sin(2 * np.pi * 440 * t) # Beep
+        sf.write(output_path, y, sr)
 
     return {
         "text": bot_text,

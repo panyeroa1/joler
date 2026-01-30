@@ -1,4 +1,4 @@
-# Qwen3-TTS Dependencies for HuggingFace Spaces
+# Qwen3-TTS Dependencies
 torch>=2.0.0
 transformers
 fastapi
@@ -13,3 +13,4 @@ soundfile
 sox
 numpy
 huggingface_hub
+requests
