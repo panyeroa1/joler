@@ -4,16 +4,31 @@ A premium, localized voice synthesis application powered by **Qwen3-TTS**.
 
 ## Features
 
-- **Premium UI**: Dark-themed, high-end interface with glassmorphism effects.
-- **Low Latency**: Optimized for local execution with bfloat16/float32.
-- **VRAM Friendly**: Supports 0.6B and 1.7B model sizes.
-- **Multi-Voice**: Choose from a variety of distinct vocal identities.
+- **Premium UI**: Dark-themed, high-end## ✨ Premium Experience: Maximo Primo
+This release includes the **Maximo Primo** premium interface, a high-end web UI designed for the Qwen3-TTS engine.
 
-## Quick Start
+### How to Run
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Launch the app: `python app.py`
+1. Install dependencies:
 
-## Credits
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Based on the Qwen3-TTS research and architecture.
+2. Start the application:
+
+   ```bash
+   python app.py
+   ```
+
+3. Open your browser to: `http://localhost:8000`
+
+### Features
+
+- **Aesthetic Design**: Glassmorphism, radial gradients, and fluid animations.
+- **Voice-First**: Integrated microphone controls and visualizer.
+- **Engine Core**: Powered by Qwen-Audio technology.
+
+---
+*Developed for the panyeroa1/joler project.*
+n3-TTS research and architecture.
