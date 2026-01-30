@@ -9,3 +9,4 @@ torchaudio
 soundfile
 sox
 numpy
+huggingface_hub
