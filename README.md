@@ -23,7 +23,7 @@ This release includes the **Maximo Primo** premium interface, a high-end web UI 
 
 3. Open your browser to: `http://localhost:8000`
 
-### Features
+### Included Features
 
 - **Aesthetic Design**: Glassmorphism, radial gradients, and fluid animations.
 - **Voice-First**: Integrated microphone controls and visualizer.
