@@ -75,7 +75,10 @@ export class MaximoApp {
     }
 
     async sendAudio(blob) {
-        this.addMessage("🎤 Voice Command Sent", "user");
+        // Optimistic UI with temporary placeholder
+        const userMsgId = 'user-' + Date.now();
+        this.addMessage("...", "user", userMsgId);
+
         const typingId = this.showTyping();
         const selectedEngine = this.engineSelect ? this.engineSelect.value : 'tts';
 
@@ -93,6 +96,14 @@ export class MaximoApp {
 
             const data = await response.json();
             this.removeTyping(typingId);
+
+            // Replace placeholder with actual transcription
+            const userMsgDiv = document.getElementById(userMsgId);
+            if (userMsgDiv && data.transcription) {
+                userMsgDiv.textContent = data.transcription;
+            } else if (userMsgDiv) {
+                userMsgDiv.textContent = "🎤 Voice command processed";
+            }
 
             // Add bot text response
             this.addMessage(data.text, "bot");
@@ -153,9 +164,10 @@ export class MaximoApp {
         if (div) div.remove();
     }
 
-    addMessage(text, sender) {
+    addMessage(text, sender, id = null) {
         const div = document.createElement('div');
         div.className = `message ${sender}`;
+        if (id) div.id = id;
         div.textContent = text;
         this.chatContainer.appendChild(div);
         this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
