@@ -67,20 +67,21 @@ def get_asr_pipe():
     return ASR_PIPE
 
 def generate_ollama_response(prompt):
-    """Call local Ollama for text response."""
+    """Call local Ollama for text response in Dutch."""
     try:
         url = "http://localhost:11434/api/generate"
+        # Prompt explicitly asks for Dutch to match the new Cartesia config
         payload = {
             "model": "eburon-orbit-2.3",
-            "prompt": f"User said: {prompt}\n\nResponse (be concise, professional, and helpful):",
+            "prompt": f"User said: {prompt}\n\nAntwoord in het Nederlands. Wees beknopt, professioneel en behulpzaam:",
             "stream": False
         }
         response = requests.post(url, json=payload, timeout=10)
         if response.status_code == 200:
-            return response.json().get("response", "I am standing by.").strip()
+            return response.json().get("response", "Ik sta stand-by.").strip()
     except Exception as e:
         print(f"Ollama error: {e}")
-    return "I am processing your request. Please stand by."
+    return "Ik verwerk je verzoek. Even geduld alstublieft."
 
 @app.get("/")
 async def redirect_to_ui():
@@ -119,7 +120,6 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("cartes
             result = pipe(wav_input_path)
             transcription = result.get("text", "").strip()
         elif pipe:
-            # Last ditch direct load
             try:
                 audio, sr = librosa.load(input_path, sr=16000)
                 result = pipe(audio)
@@ -128,52 +128,62 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("cartes
                 pass
 
         if not transcription:
-            transcription = "I couldn't hear you clearly."
+            transcription = "Ik kon je niet goed horen."
 
     except Exception as e:
         print(f"Audio processing error: {e}")
-        transcription = "System is processing your voice..."
+        transcription = "Systeem verwerkt je stem..."
 
     # 3. LLM Logic (Ollama)
     bot_text = generate_ollama_response(transcription)
 
-    # 4. TTS Synthesis Routing (Cartesia as primary)
+    # 4. TTS Synthesis Routing (New Cartesia Config)
     audio_generated = False
     
-    # Clean up bot text for TTS (optional, just in case)
-    tts_text = bot_text.replace("*", "").replace("#", "")
+    # Format bot text with emotion tags for Cartesia
+    # We add a happy emotion tag by default as requested in the example
+    tts_text = f"<emotion value=\"happy\" />{bot_text}"
 
-    if engine == "cartesia" or engine == "orbit_sonic": # Support both names
+    if engine == "cartesia" or engine == "orbit_sonic":
         try:
             cartesia_url = "https://api.cartesia.ai/tts/bytes"
             headers = {
                 "Cartesia-Version": "2025-04-16",
-                "X-API-Key": "sk_car_SfvQvL1pKathEnBbiTQPUm",
+                "X-API-Key": "sk_car_hDqGrK59dHF3WYAZX5LXWx",
                 "Content-Type": "application/json"
             }
             payload = {
                 "model_id": "sonic-3-latest",
                 "transcript": tts_text,
-                "voice": {"mode": "id", "id": "005af375-5aad-4c02-9551-7fc411430542"},
-                "output_format": {"container": "wav", "encoding": "pcm_f32le", "sample_rate": 44100},
-                "language": "en", # Defaulted to en for general usability
+                "voice": {
+                    "mode": "id",
+                    "id": "005af375-5aad-4c02-9551-7fc411430542"
+                },
+                "output_format": {
+                    "container": "wav",
+                    "encoding": "pcm_f32le",
+                    "sample_rate": 44100
+                },
+                "language": "nl",
                 "speed": "normal",
-                "generation_config": {"speed": 1, "volume": 1, "emotion": "excited"}
+                "pronunciation_dict_id": "pdict_nyWBBphhMbxQmpmccYdMUy",
+                "generation_config": {
+                    "speed": 1,
+                    "volume": 1,
+                    "emotion": "content"
+                }
             }
             response = requests.post(cartesia_url, headers=headers, json=payload)
             if response.status_code == 200:
                 with open(output_path, "wb") as f:
                     f.write(response.content)
                 audio_generated = True
+            else:
+                print(f"Cartesia API error: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"Cartesia error: {e}")
 
-    # Fallback/Other engines...
-    if not audio_generated and engine == "eburon":
-        # Placeholder for local Qwen3-TTS generation if fully rigged
-        pass
-
-    # Final fallback to beep if nothing generated
+    # Fallback to beep if nothing generated
     if not audio_generated:
         sr = 16000
         duration = 0.5
