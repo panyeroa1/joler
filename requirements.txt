@@ -1,0 +1,11 @@
+# Qwen3-TTS Dependencies for HuggingFace Spaces
+torch>=2.0.0
+transformers
+accelerate
+einops
+gradio
+librosa
+torchaudio
+soundfile
+sox
+numpy
