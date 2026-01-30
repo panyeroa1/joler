@@ -14,6 +14,10 @@ import librosa
 import requests
 import json
 import subprocess
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Local cache configuration to avoid permission issues
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -69,10 +73,10 @@ def get_asr_pipe():
 def generate_ollama_response(prompt):
     """Call local Ollama for text response in Dutch."""
     try:
-        url = "http://localhost:11434/api/generate"
+        url = f"{os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')}/api/generate"
         # Prompt explicitly asks for Dutch to match the new Cartesia config
         payload = {
-            "model": "eburon-orbit-2.3",
+            "model": os.getenv("OLLAMA_MODEL", "eburon-orbit-2.3"),
             "prompt": f"User said: {prompt}\n\nAntwoord in het Nederlands. Wees beknopt, professioneel en behulpzaam:",
             "stream": False
         }
@@ -148,8 +152,8 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("cartes
         try:
             cartesia_url = "https://api.cartesia.ai/tts/bytes"
             headers = {
-                "Cartesia-Version": "2025-04-16",
-                "X-API-Key": "sk_car_hDqGrK59dHF3WYAZX5LXWx",
+                "Cartesia-Version": os.getenv("CARTESIA_VERSION", "2025-04-16"),
+                "X-API-Key": os.getenv("CARTESIA_API_KEY"),
                 "Content-Type": "application/json"
             }
             payload = {
@@ -157,7 +161,7 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("cartes
                 "transcript": tts_text,
                 "voice": {
                     "mode": "id",
-                    "id": "005af375-5aad-4c02-9551-7fc411430542"
+                    "id": os.getenv("CARTESIA_VOICE_ID", "005af375-5aad-4c02-9551-7fc411430542")
                 },
                 "output_format": {
                     "container": "wav",

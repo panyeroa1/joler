@@ -13,4 +13,4 @@ soundfile
 sox
 numpy
 huggingface_hub
-requests
+requestspython-dotenv

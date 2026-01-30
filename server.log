@@ -12,3 +12,25 @@ Loading Whisper-Tiny ASR pipeline...
   y, sr_native = __audioread_load(path, offset, duration, dtype)
 ASR Pipeline Ready.
 INFO:     127.0.0.1:56814 - "POST /process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57309 - "GET /ui HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:57310 - "GET /ui HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:57309 - "GET /ui/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57309 - "GET /ui/style.css HTTP/1.1" 304 Not Modified
+INFO:     127.0.0.1:57310 - "GET /ui/app.js HTTP/1.1" 304 Not Modified
+/Users/master/Development/moltbot/joler/app.py:124: UserWarning: PySoundFile failed. Trying audioread instead.
+  audio, sr = librosa.load(input_path, sr=16000)
+/Users/master/Development/moltbot/Review-Qwen3-TTS/env/lib/python3.14/site-packages/librosa/core/audio.py:184: FutureWarning: librosa.core.audio.__audioread_load
+	Deprecated as of librosa version 0.10.0.
+	It will be removed in librosa version 1.0.
+  y, sr_native = __audioread_load(path, offset, duration, dtype)
+INFO:     127.0.0.1:57310 - "POST /process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57310 - "GET /audio/584c9e1c-ace2-4506-819c-d64f7d0f8f35 HTTP/1.1" 206 Partial Content
+INFO:     127.0.0.1:57310 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+/Users/master/Development/moltbot/joler/app.py:124: UserWarning: PySoundFile failed. Trying audioread instead.
+  audio, sr = librosa.load(input_path, sr=16000)
+/Users/master/Development/moltbot/Review-Qwen3-TTS/env/lib/python3.14/site-packages/librosa/core/audio.py:184: FutureWarning: librosa.core.audio.__audioread_load
+	Deprecated as of librosa version 0.10.0.
+	It will be removed in librosa version 1.0.
+  y, sr_native = __audioread_load(path, offset, duration, dtype)
+INFO:     127.0.0.1:57324 - "POST /process HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57324 - "GET /audio/a8103198-8dec-4592-95cf-303d8ce8f176 HTTP/1.1" 206 Partial Content
