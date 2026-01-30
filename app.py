@@ -4,7 +4,8 @@ import uuid
 import torch
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, BackgroundTasks, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from qwen_tts.models import Qwen2AudioForConditionalGeneration
@@ -13,6 +14,14 @@ import soundfile as sf
 import librosa
 
 app = FastAPI(title="Maximo Primo API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Setup directories
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")

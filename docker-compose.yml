@@ -1,0 +1,8 @@
+services:
+  maximo-primo:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./temp:/app/temp
+    restart: unless-stopped

@@ -11,6 +11,12 @@ export class MaximoApp {
         this.statusText = document.getElementById('status-text');
         this.engineSelect = document.getElementById('engine-select');
 
+        // Resolve API Base URL for cross-platform deployments
+        this.apiBaseUrl = window.MAXIMO_API_URL || "";
+        if (this.apiBaseUrl.endsWith("/")) {
+            this.apiBaseUrl = this.apiBaseUrl.slice(0, -1);
+        }
+
         if (this.micBtn) {
             this.micBtn.addEventListener('click', () => this.toggleRecording());
         }
@@ -78,7 +84,7 @@ export class MaximoApp {
             formData.append('file', blob, 'input_audio.webm');
             formData.append('engine', selectedEngine);
 
-            const response = await fetch('/process', {
+            const response = await fetch(`${this.apiBaseUrl}/process`, {
                 method: 'POST',
                 body: formData
             });
@@ -93,7 +99,8 @@ export class MaximoApp {
 
             // Play the response audio
             if (data.audio_url) {
-                const audio = new Audio(data.audio_url);
+                const audioUrl = data.audio_url.startsWith("http") ? data.audio_url : `${this.apiBaseUrl}${data.audio_url}`;
+                const audio = new Audio(audioUrl);
                 audio.play();
                 this.updateStatus("Speaking...");
                 audio.onended = () => this.updateStatus("Standby");
