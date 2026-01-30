@@ -28,7 +28,7 @@
                 <option value="orbit">Orbit Pro</option>
                 <option value="orbit_beta">Orbit Beta</option>
                 <option value="tts">Voice Core (Local)</option>
-                <option value="cartesia" selected>Orbit Sonic</option>
+                <option value="cartesia">Orbit Sonic</option>
                 <option value="gemini">Gemini Live</option>
             </select>
         </div>

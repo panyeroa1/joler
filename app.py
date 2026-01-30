@@ -25,7 +25,7 @@ os.environ["TORCH_HOME"] = os.path.join(CACHE_DIR, "torch")
 # Ensure we can find the qwen_tts package
 sys.path.append(PROJECT_ROOT)
 
-# Import Qwen-Audio and Whisper components
+# Import Whisper components
 try:
     from transformers import pipeline
     ASR_PIPE = None # Lazy load
@@ -66,56 +66,84 @@ def get_asr_pipe():
             return None
     return ASR_PIPE
 
+def generate_ollama_response(prompt):
+    """Call local Ollama for text response."""
+    try:
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": "eburon-orbit-2.3",
+            "prompt": f"User said: {prompt}\n\nResponse (be concise, professional, and helpful):",
+            "stream": False
+        }
+        response = requests.post(url, json=payload, timeout=10)
+        if response.status_code == 200:
+            return response.json().get("response", "I am standing by.").strip()
+    except Exception as e:
+        print(f"Ollama error: {e}")
+    return "I am processing your request. Please stand by."
+
 @app.get("/")
 async def redirect_to_ui():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 @app.post("/process")
-async def process_audio(file: UploadFile = File(...), engine: str = Form("tts")):
+async def process_audio(file: UploadFile = File(...), engine: str = Form("cartesia")):
     session_id = str(uuid.uuid4())
     input_path = os.path.join(TEMP_DIR, f"{session_id}_in.webm")
+    wav_input_path = os.path.join(TEMP_DIR, f"{session_id}_in.wav")
     output_path = os.path.join(TEMP_DIR, f"{session_id}_out.wav")
     
     with open(input_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    # TRANSCRIPTION (Real-time STT)
-    # Convert webm to wav for processing
-    wav_input_path = os.path.join(TEMP_DIR, f"{session_id}_in.wav")
-    transcription = "..."
+    transcription = ""
     try:
-        subprocess.run(["ffmpeg", "-i", input_path, wav_input_path, "-ar", "16000", "-ac", "1", "-y"], capture_output=True)
+        # 1. Audio Conversion
+        converted = False
+        
+        # Try ffmpeg
+        if shutil.which("ffmpeg"):
+            subprocess.run(["ffmpeg", "-i", input_path, wav_input_path, "-ar", "16000", "-ac", "1", "-y"], capture_output=True)
+            if os.path.exists(wav_input_path) and os.path.getsize(wav_input_path) > 0:
+                converted = True
+        
+        # Try afconvert (macOS native)
+        if not converted and shutil.which("afconvert"):
+            subprocess.run(["afconvert", "-f", "WAVE", "-d", "LEI16@16000", input_path, wav_input_path], capture_output=True)
+            if os.path.exists(wav_input_path) and os.path.getsize(wav_input_path) > 0:
+                converted = True
+
+        # 2. Transcription
         pipe = get_asr_pipe()
-        if pipe:
+        if converted and pipe:
             result = pipe(wav_input_path)
-            transcription = result.get("text", "I couldn't catch that.").strip()
-        else:
-            transcription = "ASR Engine initializing..."
+            transcription = result.get("text", "").strip()
+        elif pipe:
+            # Last ditch direct load
+            try:
+                audio, sr = librosa.load(input_path, sr=16000)
+                result = pipe(audio)
+                transcription = result.get("text", "").strip()
+            except Exception:
+                pass
+
+        if not transcription:
+            transcription = "I couldn't hear you clearly."
+
     except Exception as e:
-        print(f"Transcription error: {e}")
-        transcription = "Audio processing error."
+        print(f"Audio processing error: {e}")
+        transcription = "System is processing your voice..."
 
-    # BOT LOGIC
-    bot_text = "Processing..."
-    
-    if engine == "eburon":
-        bot_text = f"Eburon 3.0 confirmed. I heard: '{transcription}'. All systems are at your command."
-    elif engine == "orbit":
-        bot_text = f"Orbit Pro relay active. Intelligence match: '{transcription}'. Ready for directive."
-    elif engine == "orbit_beta":
-        bot_text = f"Orbit Beta feed established. Captured: '{transcription}'. Processing via experimental parameters."
-    elif engine == "tts":
-        bot_text = f"Voice Core Local. You said: '{transcription}'."
-    elif engine == "cartesia":
-        bot_text = f"Orbit Sonic channel prioritized. Transcription: '{transcription}'. High-speed link active."
-    elif engine == "gemini":
-        bot_text = f"Gemini Live Stream sync. Understanding: '{transcription}'."
-    else:
-        bot_text = f"System Default. Transcription: '{transcription}'."
+    # 3. LLM Logic (Ollama)
+    bot_text = generate_ollama_response(transcription)
 
-    # TTS Synthesis Routing (Cartesia Example)
+    # 4. TTS Synthesis Routing (Cartesia as primary)
     audio_generated = False
-    if engine == "cartesia":
+    
+    # Clean up bot text for TTS (optional, just in case)
+    tts_text = bot_text.replace("*", "").replace("#", "")
+
+    if engine == "cartesia" or engine == "orbit_sonic": # Support both names
         try:
             cartesia_url = "https://api.cartesia.ai/tts/bytes"
             headers = {
@@ -125,10 +153,10 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("tts"))
             }
             payload = {
                 "model_id": "sonic-3-latest",
-                "transcript": bot_text,
+                "transcript": tts_text,
                 "voice": {"mode": "id", "id": "005af375-5aad-4c02-9551-7fc411430542"},
                 "output_format": {"container": "wav", "encoding": "pcm_f32le", "sample_rate": 44100},
-                "language": "nl",
+                "language": "en", # Defaulted to en for general usability
                 "speed": "normal",
                 "generation_config": {"speed": 1, "volume": 1, "emotion": "excited"}
             }
@@ -140,12 +168,17 @@ async def process_audio(file: UploadFile = File(...), engine: str = Form("tts"))
         except Exception as e:
             print(f"Cartesia error: {e}")
 
-    # Fallback to beep if nothing was generated
+    # Fallback/Other engines...
+    if not audio_generated and engine == "eburon":
+        # Placeholder for local Qwen3-TTS generation if fully rigged
+        pass
+
+    # Final fallback to beep if nothing generated
     if not audio_generated:
         sr = 16000
-        duration = 1.0
+        duration = 0.5
         t = np.linspace(0, duration, int(sr * duration))
-        y = 0.5 * np.sin(2 * np.pi * 440 * t) # Beep
+        y = 0.5 * np.sin(2 * np.pi * 440 * t) 
         sf.write(output_path, y, sr)
 
     return {
